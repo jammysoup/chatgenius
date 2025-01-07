@@ -18,7 +18,7 @@ interface UserReaction {
 
 export async function POST(
   req: Request,
-  { params }: { params: { messageId: string } }
+  context: { params: { messageId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -26,6 +26,7 @@ export async function POST(
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { messageId } = await context.params;
     const json = await req.json()
     const { emoji } = reactionSchema.parse(json)
 
@@ -34,7 +35,7 @@ export async function POST(
       where: {
         userId_messageId_emoji: {
           userId: session.user.id,
-          messageId: params.messageId,
+          messageId,
           emoji,
         },
       },
@@ -51,7 +52,7 @@ export async function POST(
       data: {
         emoji,
         userId: session.user.id,
-        messageId: params.messageId,
+        messageId,
       },
     })
 
@@ -63,7 +64,7 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  { params }: { params: { messageId: string } }
+  context: { params: { messageId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -71,15 +72,16 @@ export async function GET(
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { messageId } = context.params;
     const reactions = await prisma.messageReaction.groupBy({
       by: ["emoji"],
-      where: { messageId: params.messageId },
+      where: { messageId },
       _count: true,
     })
 
     const userReactions = await prisma.messageReaction.findMany({
       where: {
-        messageId: params.messageId,
+        messageId,
         userId: session.user.id,
       },
       select: { emoji: true },
