@@ -6,31 +6,15 @@ import { authOptions } from "@/lib/auth";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    console.log('Session:', session?.user?.id);
 
-    // Get all users in the workspace
-    const members = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        status: true,
-        createdAt: true,
-      },
-      orderBy: {
-        createdAt: 'asc', // Show members in order of joining
-      },
-    });
+    // Get all users without any filtering
+    const allUsers = await prisma.user.findMany();
+    console.log('Found users:', allUsers.length);
 
-    return NextResponse.json(members);
+    return NextResponse.json(allUsers);
   } catch (error) {
-    console.error("Error fetching workspace members:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch members" },
-      { status: 500 }
-    );
+    console.error("Error:", error);
+    return NextResponse.json({ error: "Failed to fetch members" }, { status: 500 });
   }
 } 

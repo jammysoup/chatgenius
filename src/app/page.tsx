@@ -78,11 +78,14 @@ export default function Home() {
     async function fetchWorkspaceMembers() {
       try {
         const response = await fetch('/api/workspace/members');
-        if (!response.ok) throw new Error('Failed to fetch members');
         const data = await response.json();
-        setMembers(data);
+        console.log('Members data:', data);
+
+        if (Array.isArray(data)) {
+          setMembers(data);
+        }
       } catch (error) {
-        console.error('Error fetching workspace members:', error);
+        console.error('Error:', error);
       }
     }
 
@@ -212,10 +215,6 @@ export default function Home() {
 
   const handleChannelClick = (channel: ChannelType) => {
     setActiveChannel(channel);
-  };
-
-  const handleChannelSelect = (channelId: string) => {
-    setCurrentChannel(channelId);
   };
 
   const handleStartThread = (message: Message) => {
