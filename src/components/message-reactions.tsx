@@ -72,14 +72,14 @@ export function MessageReactions({ messageId, initialReactions }: MessageReactio
           variant="ghost"
           size="sm"
           className={cn(
-            "h-6 px-2 py-1 text-xs hover:bg-gray-700/50",
-            reaction.hasReacted && "bg-gray-700/50"
+            "h-6 px-2 py-1 text-xs bg-blue-50 border border-gray-300 hover:bg-blue-100",
+            reaction.hasReacted && "bg-blue-100"
           )}
           onClick={() => handleReaction(reaction.emoji)}
         >
           <span>{reaction.emoji}</span>
           {reaction.count > 0 && (
-            <span className="ml-1 text-white font-medium">{reaction.count}</span>
+            <span className="ml-1 text-black font-medium">{reaction.count}</span>
           )}
         </Button>
       ))}
@@ -89,9 +89,9 @@ export function MessageReactions({ messageId, initialReactions }: MessageReactio
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0 hover:bg-gray-700/50"
+            className="h-6 w-6 p-0 bg-blue-50 border border-gray-300 hover:bg-blue-100"
           >
-            <Plus className="h-3 w-3 text-gray-500 hover:text-gray-400" />
+            <Plus className="h-3 w-3 text-gray-500" />
           </Button>
         </PopoverTrigger>
         <PopoverContent 
@@ -104,7 +104,7 @@ export function MessageReactions({ messageId, initialReactions }: MessageReactio
                 key={emoji}
                 variant="ghost"
                 size="sm"
-                className="hover:bg-gray-100 px-2"
+                className="hover:bg-blue-50 px-2"
                 onClick={() => {
                   handleReaction(emoji);
                 }}
