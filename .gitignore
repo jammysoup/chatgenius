@@ -43,3 +43,22 @@ next-env.d.ts
 # uploads
 public/uploads/*
 !public/uploads/.gitkeep
+
+# AWS CLI and large installation files
+AWSCLIV2.pkg
+*.pkg
+*.dmg
+*.exe
+*.msi
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.iso
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
