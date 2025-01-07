@@ -26,6 +26,7 @@ import {
 import Image from "next/image";
 import { MessageReactions } from "@/components/message-reactions";
 import { Thread } from "@/components/thread";
+import { EmojiPickerButton } from "@/components/emoji-picker-button";
 
 type ChannelType = {
   id: string;
@@ -195,6 +196,10 @@ export default function Home() {
       console.error("Error creating channel:", error);
       setIsCreatingChannel(false);
     }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
   };
 
   if (status === "loading") {
@@ -386,17 +391,26 @@ export default function Home() {
           </div>
         </div>
 
-        <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
-          <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
-            <Input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={`Message ${activeChannel.type === 'channel' ? '#' : ''}${activeChannel.name}`}
-              className="bg-transparent border-0 focus-visible:ring-0 text-gray-700 placeholder:text-gray-400"
-            />
-          </div>
-        </form>
+        <div className="p-4 border-t border-gray-300 bg-white">
+          <form onSubmit={handleSendMessage} className="flex gap-2">
+            <div className="flex-1 flex items-center gap-2 rounded border border-gray-300">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1 p-2 focus:outline-none"
+              />
+              <EmojiPickerButton onEmojiSelect={handleEmojiSelect} />
+            </div>
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Send
+            </button>
+          </form>
+        </div>
       </div>
 
       <div className="bg-white border-l border-gray-200">

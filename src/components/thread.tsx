@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { MessageReactions } from './message-reactions';
+import { EmojiPickerButton } from "@/components/emoji-picker-button";
 
 interface ThreadProps {
   parentMessage: Message;
@@ -62,6 +63,10 @@ export function Thread({ parentMessage, onClose }: ThreadProps) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setNewReply(prev => prev + emoji);
   };
 
   return (
@@ -125,15 +130,17 @@ export function Thread({ parentMessage, onClose }: ThreadProps) {
       {/* Reply input */}
       <div className="p-4 border-t border-gray-300">
         <form onSubmit={handleSubmitReply} className="flex gap-2">
-          <input
-            type="text"
-            value={newReply}
-            onChange={(e) => setNewReply(e.target.value)}
-            placeholder="Reply in thread..."
-            className="flex-1 rounded border border-gray-300 p-2 
-              focus:outline-none focus:border-blue-500"
-            disabled={isSubmitting}
-          />
+          <div className="flex-1 flex items-center gap-2 rounded border border-gray-300">
+            <input
+              type="text"
+              value={newReply}
+              onChange={(e) => setNewReply(e.target.value)}
+              placeholder="Reply in thread..."
+              className="flex-1 p-2 focus:outline-none"
+              disabled={isSubmitting}
+            />
+            <EmojiPickerButton onEmojiSelect={handleEmojiSelect} />
+          </div>
           <button
             type="submit"
             className={`px-4 py-2 rounded ${
