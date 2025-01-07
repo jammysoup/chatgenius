@@ -69,18 +69,18 @@ model Channel {
 }
 
 model Message {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   userId    String
   channelId String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  parentId  String?
+  user      User      @relation(fields: [userId], references: [id])
+  channel   Channel   @relation(fields: [channelId], references: [id])
+  parent    Message?  @relation("ThreadReplies", fields: [parentId], references: [id])
+  replies   Message[] @relation("ThreadReplies")
   reactions MessageReaction[]
-
-  @@index([userId])
-  @@index([channelId])
 }
 
 model MessageReaction {

@@ -18,7 +18,10 @@ export async function GET(req: Request) {
     }
 
     const messages = await prisma.message.findMany({
-      where: { channelId },
+      where: { 
+        channelId,
+        parentId: null // Only fetch top-level messages
+      },
       orderBy: { createdAt: "asc" },
       include: {
         user: {
@@ -28,10 +31,23 @@ export async function GET(req: Request) {
             email: true,
           },
         },
+        reactions: true,
+        _count: {
+          select: {
+            replies: true // Get count of replies
+          }
+        }
       },
     });
 
-    return NextResponse.json(messages);
+    // Transform the messages to include threadCount
+    const formattedMessages = messages.map(message => ({
+      ...message,
+      threadCount: message._count.replies,
+      _count: undefined // Remove the _count field
+    }));
+
+    return NextResponse.json(formattedMessages);
   } catch (error) {
     console.error("Error fetching messages:", error);
     return new NextResponse("Error fetching messages", { status: 500 });

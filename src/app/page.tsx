@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { MessageReactions } from "@/components/message-reactions";
+import { Thread } from "@/components/thread";
 
 type ChannelType = {
   id: string;
@@ -45,6 +46,7 @@ type Message = {
     count: number;
     hasReacted: boolean;
   }[];
+  threadCount: number;
 };
 
 type Member = {
@@ -68,6 +70,7 @@ export default function Home() {
   const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [directMessages, setDirectMessages] = useState<ChannelType[]>([]);
+  const [activeThread, setActiveThread] = useState<Message | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -210,6 +213,10 @@ export default function Home() {
     setCurrentChannel(channelId);
   };
 
+  const handleStartThread = (message: Message) => {
+    setActiveThread(message);
+  };
+
   return (
     <div className="h-screen grid grid-cols-[260px_1fr_240px]">
       <div className="bg-[#4F3B7B] text-gray-100 p-4">
@@ -337,27 +344,43 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto p-4">
           <div className="text-gray-800 space-y-4">
             {messages.map((message) => (
-              <div key={message.id} className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-medium">
-                  {message.user.name?.[0] || 'U'}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-medium text-gray-900">
-                      {message.user.name || 'User'}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(message.createdAt).toLocaleTimeString()}
-                    </span>
+              <div
+                key={message.id}
+                className="mb-4 p-2 hover:bg-gray-50 rounded"
+              >
+                <div className="flex items-start gap-2">
+                  <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-medium">
+                    {message.user.name?.[0] || 'U'}
                   </div>
-                  <p className="text-gray-700">{message.content}</p>
-                  <div className="mt-1">
-                    <MessageReactions
-                      messageId={message.id}
-                      initialReactions={message.reactions}
-                    />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{message.user?.name}</span>
+                      <span className="text-sm text-gray-500">
+                        {new Date(message.createdAt).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <p className="mt-1">{message.content}</p>
+                    
+                    <div className="mt-2 flex items-center gap-2">
+                      <MessageReactions messageId={message.id} initialReactions={message.reactions || []} />
+                      <button
+                        onClick={() => handleStartThread(message)}
+                        className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        {message.threadCount || 0} {message.threadCount === 1 ? 'reply' : 'replies'}
+                      </button>
+                    </div>
                   </div>
                 </div>
+                
+                {message.threadCount > 0 && (
+                  <div className="ml-8 mt-2 text-sm text-gray-500">
+                    View thread...
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -416,6 +439,13 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {activeThread && (
+        <Thread
+          parentMessage={activeThread}
+          onClose={() => setActiveThread(null)}
+        />
+      )}
     </div>
   );
 }
