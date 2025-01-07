@@ -24,6 +24,7 @@ model User {
   channels      Channel[]    @relation("ChannelMembers")
   ownedChannels Channel[]    @relation("ChannelOwner")
   status        String?      @default("offline") // online, offline, away
+  messageReactions MessageReaction[]
 }
 
 model Account {
@@ -55,7 +56,7 @@ model Session {
 
 model Channel {
   id          String    @id @default(cuid())
-  name        String
+  name        String    @unique
   description String?
   isPrivate   Boolean   @default(false)
   createdAt   DateTime  @default(now())
@@ -74,8 +75,24 @@ model Message {
   updatedAt DateTime @updatedAt
   userId    String
   channelId String
-  
-  // Relationships
-  user      User     @relation(fields: [userId], references: [id])
-  channel   Channel  @relation(fields: [channelId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  reactions MessageReaction[]
+
+  @@index([userId])
+  @@index([channelId])
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  createdAt DateTime @default(now())
+  userId    String
+  messageId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId, emoji])
+  @@index([userId])
+  @@index([messageId])
 } 

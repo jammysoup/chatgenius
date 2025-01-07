@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import SessionProvider from "@/components/auth/session-provider";
 import { authOptions } from "@/lib/auth";
 import "./globals.css";
+import { Toaster } from 'sonner';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,9 +15,12 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <SessionProvider session={session}>{children}</SessionProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
+        <SessionProvider session={session}>
+          {children}
+          <Toaster />
+        </SessionProvider>
       </body>
     </html>
   );
