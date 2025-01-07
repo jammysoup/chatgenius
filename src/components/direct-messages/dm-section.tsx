@@ -27,7 +27,7 @@ export function DMSection({ activeChannel, onChannelSelect }: DMSectionProps) {
 
   const fetchDirectMessages = async () => {
     try {
-      const response = await fetch('/api/channels/dms');
+      const response = await fetch('/api/dm');
       if (!response.ok) throw new Error('Failed to fetch DMs');
       const data = await response.json();
       setDirectMessages(data);

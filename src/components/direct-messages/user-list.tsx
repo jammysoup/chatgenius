@@ -25,10 +25,10 @@ export function UserList({ onDmCreated }: UserListProps) {
 
   const startDM = async (userId: string) => {
     try {
-      const response = await fetch("/api/channels/dm", {
+      const response = await fetch("/api/dm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ otherUserId: userId }),
       });
 
       if (!response.ok) throw new Error("Failed to create DM");

@@ -388,7 +388,7 @@ export default function Home() {
                   },
                   body: JSON.stringify({
                     content,
-                    channelId: "your-channel-id" // Replace with actual channel ID
+                    channelId: activeChannel.id
                   }),
                 });
 
@@ -396,6 +396,7 @@ export default function Home() {
                   throw new Error("Failed to send message");
                 }
 
+                fetchMessages(); // Refresh messages after sending
                 setNewMessage(''); // Clear the input after sending
               } catch (error) {
                 console.error("Error sending message:", error);

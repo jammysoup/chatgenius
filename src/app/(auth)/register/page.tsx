@@ -5,22 +5,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setIsLoading(true);
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
 
     try {
-      // Register the user
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
@@ -28,36 +22,20 @@ export default function RegisterPage() {
         },
         body: JSON.stringify({
           name: formData.get("name"),
-          email,
-          password,
+          email: formData.get("email"),
+          password: formData.get("password"),
         }),
       });
 
       if (!response.ok) {
         const data = await response.json();
         setError(data.error || "Something went wrong");
-        setIsLoading(false);
         return;
       }
 
-      // Sign in the user
-      const signInResult = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        setError("Failed to sign in after registration");
-        setIsLoading(false);
-        return;
-      }
-
-      router.push("/");
-      router.refresh();
+      router.push("/login");
     } catch (error) {
       setError("Something went wrong");
-      setIsLoading(false);
     }
   }
 
@@ -86,7 +64,6 @@ export default function RegisterPage() {
                 placeholder="Enter your full name"
                 className="bg-[#2C2F33] border-gray-700 text-gray-100 placeholder-gray-500
                   focus:border-blue-500 focus:ring-blue-500"
-                disabled={isLoading}
               />
             </div>
             
@@ -102,7 +79,6 @@ export default function RegisterPage() {
                 placeholder="Enter your email"
                 className="bg-[#2C2F33] border-gray-700 text-gray-100 placeholder-gray-500
                   focus:border-blue-500 focus:ring-blue-500"
-                disabled={isLoading}
               />
             </div>
 
@@ -118,7 +94,6 @@ export default function RegisterPage() {
                 placeholder="Create a password"
                 className="bg-[#2C2F33] border-gray-700 text-gray-100 placeholder-gray-500
                   focus:border-blue-500 focus:ring-blue-500"
-                disabled={isLoading}
               />
             </div>
           </div>
@@ -126,9 +101,8 @@ export default function RegisterPage() {
           <Button 
             type="submit" 
             className="w-full bg-blue-600 hover:bg-blue-700 text-gray-100 font-medium"
-            disabled={isLoading}
           >
-            {isLoading ? "Creating account..." : "Create account"}
+            Create account
           </Button>
 
           <div className="text-center text-sm text-gray-400">
