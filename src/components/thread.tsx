@@ -11,6 +11,7 @@ interface ThreadProps {
 export function Thread({ parentMessage, onClose }: ThreadProps) {
   const [replies, setReplies] = useState<Message[]>([]);
   const [newReply, setNewReply] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchReplies();
@@ -18,11 +19,14 @@ export function Thread({ parentMessage, onClose }: ThreadProps) {
 
   const fetchReplies = async () => {
     try {
+      console.log('Fetching replies for message:', parentMessage.id);
       const response = await fetch(`/api/messages/${parentMessage.id}/replies`);
-      if (response.ok) {
-        const data = await response.json();
-        setReplies(data);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      const data = await response.json();
+      console.log('Fetched replies:', data);
+      setReplies(data);
     } catch (error) {
       console.error('Error fetching replies:', error);
     }
@@ -30,30 +34,44 @@ export function Thread({ parentMessage, onClose }: ThreadProps) {
 
   const handleSubmitReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newReply.trim()) return;
+    if (!newReply.trim() || isSubmitting) return;
 
     try {
+      setIsSubmitting(true);
+      console.log('Submitting reply to message:', parentMessage.id);
+      
       const response = await fetch(`/api/messages/${parentMessage.id}/replies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newReply }),
       });
 
-      if (response.ok) {
-        const reply = await response.json();
-        setReplies([...replies, reply]);
-        setNewReply('');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send reply');
       }
+
+      const reply = await response.json();
+      console.log('Reply created:', reply);
+      
+      setReplies(prev => [...prev, reply]);
+      setNewReply('');
     } catch (error) {
       console.error('Error sending reply:', error);
+      alert('Failed to send reply. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="w-96 border-l border-gray-300 bg-white h-full flex flex-col">
+    <div className="fixed bottom-4 right-4 w-96 bg-white rounded-lg shadow-lg border border-gray-300 h-[600px] flex flex-col">
       <div className="p-4 border-b border-gray-300 flex justify-between items-center">
         <h3 className="text-lg font-semibold">Thread</h3>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+        <button 
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700"
+        >
           ✕
         </button>
       </div>
@@ -114,12 +132,18 @@ export function Thread({ parentMessage, onClose }: ThreadProps) {
             placeholder="Reply in thread..."
             className="flex-1 rounded border border-gray-300 p-2 
               focus:outline-none focus:border-blue-500"
+            disabled={isSubmitting}
           />
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className={`px-4 py-2 rounded ${
+              isSubmitting 
+                ? 'bg-blue-400 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            } text-white`}
+            disabled={isSubmitting}
           >
-            Send
+            {isSubmitting ? 'Sending...' : 'Send'}
           </button>
         </form>
       </div>
