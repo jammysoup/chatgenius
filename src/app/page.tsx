@@ -71,8 +71,22 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    async function fetchWorkspaceMembers() {
+      try {
+        const response = await fetch('/api/workspace/members');
+        if (!response.ok) throw new Error('Failed to fetch members');
+        const data = await response.json();
+        setMembers(data);
+      } catch (error) {
+        console.error('Error fetching workspace members:', error);
+      }
+    }
+
+    fetchWorkspaceMembers();
+  }, []);
+
+  useEffect(() => {
     fetchMessages();
-    fetchMembers(activeChannel.id);
   }, [activeChannel.id]);
 
   useEffect(() => {
@@ -117,14 +131,6 @@ export default function Home() {
       );
       
       setMessages(messagesWithReactions);
-    }
-  };
-
-  const fetchMembers = async (channelId: string) => {
-    const response = await fetch(`/api/channels/${channelId}/members`);
-    if (response.ok) {
-      const data = await response.json();
-      setMembers(data);
     }
   };
 
@@ -198,6 +204,10 @@ export default function Home() {
 
   const handleChannelClick = (channel: ChannelType) => {
     setActiveChannel(channel);
+  };
+
+  const handleChannelSelect = (channelId: string) => {
+    setCurrentChannel(channelId);
   };
 
   return (
@@ -368,8 +378,9 @@ export default function Home() {
 
       <div className="bg-white border-l border-gray-200">
         <div className="p-4 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-700">Channel Members</h3>
-          <p className="text-xs text-gray-500 mt-1">{members.length} members</p>
+          <h3 className="text-sm font-semibold text-gray-900">
+            Members ({members.length})
+          </h3>
         </div>
         <div className="p-2">
           <div className="space-y-1">

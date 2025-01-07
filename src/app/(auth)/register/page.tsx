@@ -41,56 +41,73 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#1A1D21]">
-      <div className="w-full max-w-md space-y-8 p-6 bg-[#222529] rounded-lg">
+      <div className="w-full max-w-md space-y-8 p-8 bg-[#222529] rounded-lg shadow-xl">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white">Create your account</h2>
+          <h2 className="text-2xl font-bold text-gray-100">Create your account</h2>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
+            <div className="text-red-400 text-sm text-center bg-red-900/20 p-2 rounded">{error}</div>
           )}
           
-          <div className="space-y-4">
-            <div>
+          <div className="space-y-5">
+            <div className="space-y-1">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-300">
+                Full name
+              </label>
               <Input
                 id="name"
                 name="name"
                 type="text"
                 required
-                placeholder="Full name"
-                className="bg-[#1A1D21] border-gray-700"
+                placeholder="Enter your full name"
+                className="bg-[#2C2F33] border-gray-700 text-gray-100 placeholder-gray-500
+                  focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
-            <div>
+            
+            <div className="space-y-1">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                Email address
+              </label>
               <Input
                 id="email"
                 name="email"
                 type="email"
                 required
-                placeholder="Email address"
-                className="bg-[#1A1D21] border-gray-700"
+                placeholder="Enter your email"
+                className="bg-[#2C2F33] border-gray-700 text-gray-100 placeholder-gray-500
+                  focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
-            <div>
+
+            <div className="space-y-1">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                Password
+              </label>
               <Input
                 id="password"
                 name="password"
                 type="password"
                 required
-                placeholder="Password"
-                className="bg-[#1A1D21] border-gray-700"
+                placeholder="Create a password"
+                className="bg-[#2C2F33] border-gray-700 text-gray-100 placeholder-gray-500
+                  focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
           </div>
 
-          <Button type="submit" className="w-full">
+          <Button 
+            type="submit" 
+            className="w-full bg-blue-600 hover:bg-blue-700 text-gray-100 font-medium"
+          >
             Create account
           </Button>
 
           <div className="text-center text-sm text-gray-400">
             Already have an account?{" "}
-            <Link href="/login" className="text-blue-500 hover:underline">
+            <Link href="/login" className="text-blue-400 hover:text-blue-300 hover:underline">
               Sign in
             </Link>
           </div>
