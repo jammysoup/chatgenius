@@ -1,23 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
+import type { User } from "@/types";
 
-type User = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  image: string | null;
-};
+interface UserListProps {
+  onDmCreated: () => void;
+}
 
-export function UserList() {
+export function UserList({ onDmCreated }: UserListProps) {
   const [users, setUsers] = useState<User[]>([]);
-  const router = useRouter();
 
   useEffect(() => {
     async function fetchUsers() {
-      const response = await fetch("/api/workspace/members");
+      const response = await fetch("/api/users");
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -27,15 +24,28 @@ export function UserList() {
   }, []);
 
   const startDM = async (userId: string) => {
-    const response = await fetch("/api/dm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ otherUserId: userId }),
-    });
+    try {
+      const response = await fetch("/api/channels/dm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
 
-    if (response.ok) {
+      if (!response.ok) throw new Error("Failed to create DM");
+      
       const channel = await response.json();
-      router.push(`/dm/${channel.id}`);
+      onDmCreated(); // Refresh DM list
+      
+      // Close the dialog after creating the DM
+      const dialogElement = document.querySelector('[role="dialog"]');
+      if (dialogElement) {
+        const closeButton = dialogElement.querySelector('button[aria-label="Close"]');
+        if (closeButton) {
+          (closeButton as HTMLButtonElement).click();
+        }
+      }
+    } catch (error) {
+      console.error("Error creating DM:", error);
     }
   };
 
@@ -48,14 +58,27 @@ export function UserList() {
           className="w-full justify-start"
           onClick={() => startDM(user.id)}
         >
-          <div className="w-8 h-8 rounded-full bg-gray-200 mr-2 flex items-center justify-center">
+          <div className="flex items-center gap-2">
             {user.image ? (
-              <img src={user.image} alt={user.name || ""} className="rounded-full" />
+              <img
+                src={user.image}
+                alt={user.name || "User"}
+                className="w-6 h-6 rounded-full"
+              />
             ) : (
-              user.name?.[0] || "?"
+              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                {user.name?.[0] || "?"}
+              </div>
             )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {user.name}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {user.email}
+              </p>
+            </div>
           </div>
-          <span>{user.name}</span>
         </Button>
       ))}
     </div>

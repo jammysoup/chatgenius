@@ -27,6 +27,7 @@ import Image from "next/image";
 import { MessageReactions } from "@/components/message-reactions";
 import { Thread } from "@/components/thread";
 import { EmojiPickerButton } from "@/components/emoji-picker-button";
+import { DMSection } from "@/components/direct-messages/dm-section";
 
 type ChannelType = {
   id: string;
@@ -286,25 +287,10 @@ export default function Home() {
           </ul>
         </div>
 
-        <div className="mt-6">
-          <h2 className="px-2 text-sm font-medium mb-2">Direct Messages</h2>
-          <ul>
-            {directMessages.map((dm) => (
-              <li key={dm.id}>
-                <Button
-                  variant="ghost"
-                  className={`w-full px-2 py-1 text-gray-100 hover:bg-[#5D477F] rounded justify-start font-normal ${
-                    activeChannel.id === dm.id ? 'bg-[#5D477F]' : ''
-                  }`}
-                  onClick={() => handleChannelClick(dm)}
-                >
-                  <span className="w-2 h-2 rounded-full bg-green-400 mr-2" />
-                  {dm.name}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <DMSection
+          activeChannel={activeChannel}
+          onChannelSelect={handleChannelClick}
+        />
       </div>
 
       <div className="flex flex-col bg-white">
