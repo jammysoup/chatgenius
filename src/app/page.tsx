@@ -29,6 +29,7 @@ import { Thread } from "@/components/thread";
 import { EmojiPickerButton } from "@/components/emoji-picker-button";
 import { DMSection } from "@/components/direct-messages/dm-section";
 import { MessageInput } from "@/components/message-input";
+import { MemberActions } from "@/components/member-actions";
 
 type ChannelType = {
   id: string;
@@ -57,6 +58,7 @@ type Member = {
   name: string | null;
   email: string | null;
   image: string | null;
+  role: string | null;
 };
 
 export default function Home() {
@@ -76,23 +78,36 @@ export default function Home() {
   const [activeThread, setActiveThread] = useState<Message | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    async function fetchWorkspaceMembers() {
-      try {
-        const response = await fetch('/api/workspace/members');
-        const data = await response.json();
-        console.log('Members data:', data);
-
-        if (Array.isArray(data)) {
-          setMembers(data);
-        }
-      } catch (error) {
-        console.error('Error:', error);
+  const fetchWorkspaceMembers = async () => {
+    try {
+      console.log("Fetching members...");
+      const response = await fetch('/api/workspace/members', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      console.log("Members response status:", response.status);
+      
+      const data = await response.json();
+      console.log("Members response data:", JSON.stringify(data, null, 2));
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch members: ${data.error}`);
       }
+      
+      if (Array.isArray(data.members)) {
+        setMembers(data.members);
+      }
+    } catch (error) {
+      console.error('Error fetching members:', error);
     }
+  };
 
+  useEffect(() => {
+    if (!session?.user) return;
     fetchWorkspaceMembers();
-  }, []);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     fetchMessages();
@@ -324,7 +339,19 @@ export default function Home() {
               <DropdownMenuSeparator className="bg-gray-200" />
               <DropdownMenuItem 
                 className="cursor-pointer text-red-500 hover:bg-gray-100"
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={async () => {
+                  try {
+                    // Set status to offline before signing out
+                    await fetch("/api/user/status", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ status: "offline" })
+                    });
+                  } catch (error) {
+                    console.error("Error updating status:", error);
+                  }
+                  signOut({ callbackUrl: "/login" });
+                }}
               >
                 Log out
               </DropdownMenuItem>
@@ -437,11 +464,26 @@ export default function Home() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-700 truncate">
                     {member.name || 'Anonymous User'}
+                    {member.role && (
+                      <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                        member.role === 'owner' 
+                          ? 'bg-purple-100 text-purple-800'
+                          : member.role === 'admin'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {member.role}
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
                     {member.email}
                   </p>
                 </div>
+                <MemberActions 
+                  member={member} 
+                  onUpdate={() => fetchWorkspaceMembers()}
+                />
               </div>
             ))}
           </div>

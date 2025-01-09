@@ -1,25 +1,20 @@
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    console.log('Handling workspace members request...');
+    console.log("Members API called");
     const session = await getServerSession(authOptions);
-    console.log('Session in members API:', {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email
-    });
-
+    console.log("Session in members API:", JSON.stringify(session, null, 2));
+    
     if (!session?.user?.id) {
-      console.log('Unauthorized request to members API');
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.log("No session user ID");
+      return NextResponse.json({ error: "Unauthorized", members: [] }, { status: 401 });
     }
 
-    // Get all users in the workspace
+    console.log("Fetching members with user ID:", session.user.id);
     const members = await prisma.user.findMany({
       select: {
         id: true,
@@ -27,23 +22,61 @@ export async function GET() {
         email: true,
         image: true,
         status: true,
-        createdAt: true,
       },
       orderBy: {
         createdAt: 'asc',
       },
     });
 
-    console.log('Database query results:', {
-      membersFound: members.length,
-      memberIds: members.map(m => m.id)
+    console.log("Raw members:", JSON.stringify(members, null, 2));
+
+    // Add role information after fetching
+    const membersWithRoles = members.map(member => {
+      const isOwner = member.email === "james@sopkin.dev" || 
+                     member.email === "james.sopkin@gmail.com" ||
+                     member.email === "james@cursor.so" ||
+                     member.email === "jamessopkin@gmail.com";
+      console.log(`Member ${member.email}: isOwner = ${isOwner}`);
+      return {
+        ...member,
+        role: isOwner ? "owner" : "user"
+      };
     });
 
-    return NextResponse.json(members);
+    console.log("Members with roles:", JSON.stringify(membersWithRoles, null, 2));
+    return NextResponse.json({ members: membersWithRoles });
   } catch (error) {
-    console.error("Error fetching workspace members:", error);
+    console.error("Error fetching members:", error);
     return NextResponse.json(
-      { error: "Failed to fetch members" },
+      { error: "Failed to fetch members", members: [] },
+      { status: 500 }
+    );
+  }
+}
+
+// Set workspace owner
+export async function POST() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Update James Sopkin to be workspace owner
+    await prisma.user.update({
+      where: {
+        email: "jamessopkin@gmail.com"
+      },
+      data: {
+        role: "owner"
+      }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error setting workspace owner:", error);
+    return NextResponse.json(
+      { error: "Failed to set workspace owner" },
       { status: 500 }
     );
   }

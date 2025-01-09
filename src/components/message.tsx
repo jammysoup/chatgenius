@@ -9,6 +9,8 @@ import type { Message as MessageType } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserAvatarButton } from "@/components/user-avatar-button";
 import ReactMarkdown from 'react-markdown';
+import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface MessageProps {
   message: MessageType;
@@ -19,6 +21,31 @@ interface MessageProps {
 export function Message({ message, onThreadClick, threadCount }: MessageProps) {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
+
+  const canDelete = session?.user?.id === message.user.id || session?.user?.role === 'admin' || session?.user?.role === 'owner';
+
+  const handleDelete = async () => {
+    if (!canDelete) return;
+
+    try {
+      const response = await fetch(`/api/messages/${message.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete message');
+      
+      // Optimistically remove message from cache
+      queryClient.setQueryData(['messages'], (oldData: MessageType[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.filter(msg => msg.id !== message.id);
+      });
+
+      toast.success('Message deleted');
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
+    }
+  };
 
   useEffect(() => {
     // Listen for message updates
@@ -62,6 +89,15 @@ export function Message({ message, onThreadClick, threadCount }: MessageProps) {
           <span className="text-sm text-gray-500">
             {formatTimeAgo(new Date(message.createdAt))}
           </span>
+          {canDelete && (
+            <button
+              onClick={handleDelete}
+              className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto p-1 text-gray-400 hover:text-red-500"
+              title="Delete message"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <div className="prose prose-sm max-w-none dark:prose-invert">
           <ReactMarkdown

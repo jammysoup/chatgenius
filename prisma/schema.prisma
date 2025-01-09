@@ -16,15 +16,16 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
+  status        String?   @default("offline")
+  role          String?   @default("user") // Can be "owner", "admin", or "user"
+
   // Relationships
   accounts      Account[]
   sessions      Session[]
   messages      Message[]
   channels      Channel[]    @relation("ChannelMembers")
   ownedChannels Channel[]    @relation("ChannelOwner")
-  status        String?      @default("offline") // online, offline, away
-  messageReactions MessageReaction[]
+  reactions     MessageReaction[]
 }
 
 model Account {

@@ -1,8 +1,9 @@
 export interface User {
   id: string;
   name: string | null;
-  email: string | null;
-  image?: string;
+  email: string;
+  image: string | null;
+  role: string | null;
 }
 
 export interface Reaction {
