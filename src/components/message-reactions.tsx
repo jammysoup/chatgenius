@@ -23,9 +23,9 @@ type MessageReactionsProps = {
   }[];
 };
 
-export function MessageReactions({ messageId, reactions: initialReactions }: MessageReactionsProps) {
+export function MessageReactions({ messageId, reactions: initialReactions = [] }: MessageReactionsProps) {
   const [currentReactions, setCurrentReactions] = useState<typeof initialReactions>(
-    initialReactions.filter(reaction => reaction.count > 0)
+    (initialReactions || []).filter(reaction => reaction.count > 0)
   );
 
   const handleReaction = async (emoji: string) => {

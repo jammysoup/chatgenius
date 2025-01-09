@@ -7,14 +7,14 @@ export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
     const channelId = searchParams.get("channelId");
 
     if (!channelId) {
-      return new NextResponse("Channel ID is required", { status: 400 });
+      return NextResponse.json({ error: "Channel ID is required" }, { status: 400 });
     }
 
     const messages = await prisma.message.findMany({
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     return NextResponse.json(formattedMessages);
   } catch (error) {
     console.error("Error fetching messages:", error);
-    return new NextResponse("Error fetching messages", { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
   }
 }
 
@@ -58,14 +58,14 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
     const { content, channelId } = body;
 
     if (!content || !channelId) {
-      return new NextResponse("Content and channel ID are required", { status: 400 });
+      return NextResponse.json({ error: "Content and channel ID are required" }, { status: 400 });
     }
 
     // Verify channel exists and user is a member
@@ -76,13 +76,13 @@ export async function POST(req: Request) {
 
     if (!channel) {
       console.error("Channel not found:", channelId);
-      return new NextResponse("Channel not found", { status: 404 });
+      return NextResponse.json({ error: "Channel not found" }, { status: 404 });
     }
 
     const isMember = channel.members.some(member => member.id === session.user.id);
     if (!isMember && channel.isPrivate) {
       console.error("User not authorized for channel:", session.user.id, channelId);
-      return new NextResponse("Not authorized to post in this channel", { status: 403 });
+      return NextResponse.json({ error: "Not authorized to post in this channel" }, { status: 403 });
     }
 
     const message = await prisma.message.create({
@@ -105,6 +105,6 @@ export async function POST(req: Request) {
     return NextResponse.json(message);
   } catch (error) {
     console.error("Error creating message:", error);
-    return new NextResponse("Error creating message", { status: 500 });
+    return NextResponse.json({ error: "Failed to create message" }, { status: 500 });
   }
 } 

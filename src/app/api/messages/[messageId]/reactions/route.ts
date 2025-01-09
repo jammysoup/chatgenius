@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { NextResponse } from "next/server"
 import { z } from "zod"
 
 const reactionSchema = z.object({
@@ -18,12 +19,12 @@ interface UserReaction {
 
 export async function POST(
   req: Request,
-  context: { params: { messageId: string } }
+  context: { params: Promise<{ messageId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { messageId } = await context.params;
@@ -45,7 +46,7 @@ export async function POST(
       await prisma.messageReaction.delete({
         where: { id: existingReaction.id },
       })
-      return Response.json({ status: "removed" })
+      return NextResponse.json({ status: "removed" })
     }
 
     await prisma.messageReaction.create({
@@ -56,23 +57,23 @@ export async function POST(
       },
     })
 
-    return Response.json({ status: "added" })
+    return NextResponse.json({ status: "added" })
   } catch (error) {
-    return Response.json({ error: "Internal Server Error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }
 
 export async function GET(
   req: Request,
-  context: { params: { messageId: string } }
+  context: { params: Promise<{ messageId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { messageId } = context.params;
+    const { messageId } = await context.params;
     const reactions = await prisma.messageReaction.groupBy({
       by: ["emoji"],
       where: { messageId },
@@ -94,8 +95,8 @@ export async function GET(
       hasReacted: (userReactions as UserReaction[]).some((r) => r.emoji === emoji),
     }))
 
-    return Response.json(formattedReactions)
+    return NextResponse.json(formattedReactions)
   } catch (error) {
-    return Response.json({ error: "Internal Server Error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 } 
