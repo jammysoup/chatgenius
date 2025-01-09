@@ -8,6 +8,7 @@ import { formatTimeAgo } from "@/lib/utils";
 import type { Message as MessageType } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserAvatarButton } from "@/components/user-avatar-button";
+import ReactMarkdown from 'react-markdown';
 
 interface MessageProps {
   message: MessageType;
@@ -53,19 +54,49 @@ export function Message({ message, onThreadClick, threadCount }: MessageProps) {
   }, [message.id, queryClient]);
 
   return (
-    <div className="group px-4 py-2 hover:bg-gray-50 flex gap-4">
-      <div className="flex-shrink-0 w-10 h-10">
-        <UserAvatarButton user={message.user} />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2">
-          <span className="font-medium">{message.user.name}</span>
-          <span className="text-xs text-gray-500">
+    <div className="group relative flex items-start gap-3 py-2 px-4 hover:bg-gray-50">
+      <UserAvatarButton user={message.user} />
+      <div className="flex-1 overflow-hidden">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold">{message.user.name}</span>
+          <span className="text-sm text-gray-500">
             {formatTimeAgo(new Date(message.createdAt))}
           </span>
         </div>
-        <p className="mt-1">{message.content}</p>
+        <div className="prose prose-sm max-w-none dark:prose-invert">
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p className="mb-0">{children}</p>,
+              img: ({ src, alt }) => (
+                <img 
+                  src={src} 
+                  alt={alt || 'message image'} 
+                  className="max-h-96 rounded-lg" 
+                />
+              ),
+              video: ({ src, ...props }) => (
+                <video 
+                  src={src}
+                  className="max-h-96 rounded-lg" 
+                  controls 
+                  {...props}
+                />
+              ),
+              a: ({ href, children }) => (
+                <a 
+                  href={href}
+                  className="text-blue-500 hover:underline" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {children}
+                </a>
+              ),
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        </div>
 
         <div className="mt-2 flex items-center gap-4">
           <MessageReactions

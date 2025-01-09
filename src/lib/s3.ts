@@ -1,7 +1,6 @@
-import { S3Client } from "@aws-sdk/client-s3";
-import { Upload } from "@aws-sdk/lib-storage";
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-export const s3Client = new S3Client({
+const s3Client = new S3Client({
   region: process.env.AWS_REGION!,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
@@ -9,16 +8,15 @@ export const s3Client = new S3Client({
   },
 });
 
-export async function uploadToS3(file: File, key: string) {
-  const upload = new Upload({
-    client: s3Client,
-    params: {
-      Bucket: process.env.AWS_BUCKET_NAME!,
-      Key: key,
-      Body: file,
-      ContentType: file.type,
-    },
+export async function uploadToS3(key: string, file: Buffer, contentType: string) {
+  const command = new PutObjectCommand({
+    Bucket: process.env.AWS_BUCKET_NAME!,
+    Key: key,
+    Body: file,
+    ContentType: contentType,
+    ACL: 'public-read',
   });
 
-  return upload.done();
+  await s3Client.send(command);
+  return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 } 

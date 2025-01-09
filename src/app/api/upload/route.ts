@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { uploadToS3 } from "@/lib/s3";
+import { uploadToS3 } from "@/app/utils/s3-upload";
 
 export async function POST(req: Request) {
   try {
@@ -17,16 +17,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const key = `uploads/${session.user.id}/${Date.now()}-${file.name}`;
-    await uploadToS3(file, key);
+    // Create a unique file name using timestamp and original name
+    const timestamp = Date.now();
+    const fileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '-');
+    const key = `uploads/${timestamp}-${fileName}`;
 
-    const url = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-    
+    const url = await uploadToS3(file, key);
+
     return NextResponse.json({ url });
   } catch (error) {
-    console.error("Error uploading file:", error);
+    console.error("Upload handler error:", error);
     return NextResponse.json(
-      { error: "Failed to upload file" },
+      { error: "Upload failed" },
       { status: 500 }
     );
   }

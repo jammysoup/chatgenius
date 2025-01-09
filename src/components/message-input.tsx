@@ -2,131 +2,174 @@
 
 import { useState } from "react"
 import { Button } from "./ui/button"
-import { Paperclip } from "lucide-react"
-import { MessageFileUpload } from "./message-file-upload"
+import { Paperclip, X } from "lucide-react"
 import { toast } from "sonner"
-import { EmojiPickerButton } from "./emoji-picker-button"
 
 interface MessageInputProps {
   onSend: (content: string) => Promise<void>
 }
 
+type AttachmentPreview = {
+  file: File;
+  previewUrl: string;
+  type: 'image' | 'video' | 'file';
+}
+
 export function MessageInput({ onSend }: MessageInputProps) {
   const [content, setContent] = useState("")
-  const [isAttachmentOpen, setIsAttachmentOpen] = useState(false)
-  const [attachments, setAttachments] = useState<Array<{ url: string, type: "file" | "image" }>>([])
-  const [isSending, setIsSending] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [attachment, setAttachment] = useState<AttachmentPreview | null>(null)
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!content.trim() && attachments.length === 0) return
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) {
+      console.log("No file selected");
+      return;
+    }
+
+    console.log("File selected:", { name: file.name, type: file.type, size: file.size });
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File must be less than 10MB")
+      return
+    }
+
+    // Create preview
+    let type: 'image' | 'video' | 'file' = 'file';
+    if (file.type.startsWith('image/')) {
+      type = 'image';
+    } else if (file.type.startsWith('video/')) {
+      type = 'video';
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setAttachment({ file, previewUrl, type });
+  }
+
+  const handleUploadAndSend = async () => {
+    if (!content.trim() && !attachment) return;
 
     try {
-      setIsSending(true)
-      
-      // Format message with attachments
-      const messageContent = [
-        content,
-        ...attachments.map(att => {
-          return att.type === "image" 
-            ? `![Image](${att.url})`
-            : `[File](${att.url})`
-        })
-      ].join("\n")
+      let messageContent = content;
 
-      await onSend(messageContent)
-      
-      // Reset state
-      setContent("")
-      setAttachments([])
-      setIsAttachmentOpen(false)
+      // Upload file if there's an attachment
+      if (attachment) {
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", attachment.file);
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const data = await response.json();
+        
+        // Add file URL to message based on type
+        if (attachment.type === 'image') {
+          messageContent += `\n![image](${data.url})`;
+        } else if (attachment.type === 'video') {
+          messageContent += `\n<video controls src="${data.url}"></video>`;
+        } else {
+          messageContent += `\n[${attachment.file.name}](${data.url})`;
+        }
+      }
+
+      await onSend(messageContent);
+      setContent("");
+      setAttachment(null);
     } catch (error) {
-      toast.error("Failed to send message")
+      console.error("Error sending message:", error);
+      toast.error("Failed to send message");
     } finally {
-      setIsSending(false)
+      setIsUploading(false);
     }
   }
 
-  const handleFileUpload = (url: string, type: "file" | "image") => {
-    setAttachments(prev => [...prev, { url, type }])
-    setIsAttachmentOpen(false) // Close the upload dialog after successful upload
-  }
-
-  const handleEmojiSelect = (emoji: string) => {
-    setContent(prev => prev + emoji)
+  const removeAttachment = () => {
+    if (attachment) {
+      URL.revokeObjectURL(attachment.previewUrl);
+      setAttachment(null);
+    }
   }
 
   return (
-    <div className="relative"> {/* Added wrapper div for positioning */}
-      {/* File upload component */}
-      {isAttachmentOpen && (
-        <div className="absolute bottom-full left-0 mb-2 bg-white p-4 rounded-md shadow-lg border">
-          <MessageFileUpload onFileUpload={handleFileUpload} />
-        </div>
-      )}
-
-      {/* Attachments preview */}
-      {attachments.length > 0 && (
-        <div className="absolute bottom-full left-0 flex gap-2 mb-2 p-2">
-          {attachments.map((att, index) => (
-            <div key={index} className="relative group">
-              {att.type === "image" ? (
-                <img 
-                  src={att.url} 
-                  alt="attachment" 
-                  className="w-20 h-20 object-cover rounded"
-                />
-              ) : (
-                <div className="w-20 h-20 bg-gray-100 rounded flex items-center justify-center">
-                  📎
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                ×
-              </button>
+    <div className="flex flex-col gap-2 p-4 border-t">
+      {/* Attachment Preview */}
+      {attachment && (
+        <div className="relative inline-block max-w-xs">
+          {attachment.type === 'image' && (
+            <img 
+              src={attachment.previewUrl} 
+              alt="attachment preview" 
+              className="max-h-32 rounded"
+            />
+          )}
+          {attachment.type === 'video' && (
+            <video 
+              src={attachment.previewUrl} 
+              className="max-h-32 rounded" 
+              controls
+            />
+          )}
+          {attachment.type === 'file' && (
+            <div className="p-2 bg-gray-100 rounded flex items-center gap-2">
+              <Paperclip className="h-4 w-4" />
+              <span className="text-sm truncate">{attachment.file.name}</span>
             </div>
-          ))}
+          )}
+          <button
+            onClick={removeAttachment}
+            className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
-      <form onSubmit={handleSend} className="flex gap-2">
-        <div className="flex-1 flex items-center gap-2 rounded border border-gray-300">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-gray-500 hover:text-gray-700"
-            onClick={(e) => {
-              e.preventDefault()
-              setIsAttachmentOpen(!isAttachmentOpen)
-            }}
-          >
-            <Paperclip className="h-5 w-5" />
-          </Button>
+      {/* Message Input */}
+      <div className="flex items-center gap-2">
+        <input
+          type="file"
+          id="file-upload"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-gray-500 hover:text-gray-700"
+          onClick={(e) => {
+            e.preventDefault()
+            const fileInput = document.querySelector('#file-upload') as HTMLInputElement
+            if (fileInput) {
+              fileInput.click()
+            }
+          }}
+        >
+          <Paperclip className="h-5 w-5" />
+        </Button>
 
-          <input
-            type="text"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 p-2 focus:outline-none"
-          />
-          
-          <EmojiPickerButton onEmojiSelect={handleEmojiSelect} />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isSending || (!content.trim() && attachments.length === 0)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Type a message..."
+          className="flex-1 resize-none"
+          disabled={isUploading}
+        />
+        <Button 
+          onClick={handleUploadAndSend}
+          disabled={(!content.trim() && !attachment) || isUploading}
         >
           Send
-        </button>
-      </form>
+        </Button>
+      </div>
     </div>
   )
 } 
