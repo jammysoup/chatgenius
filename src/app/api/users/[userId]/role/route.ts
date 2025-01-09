@@ -3,15 +3,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
-import { Role } from "@prisma/client";
 
 const roleSchema = z.object({
-  role: z.nativeEnum(Role),
+  role: z.enum(["user", "admin", "owner"]),
 });
 
-export async function PUT(
+export async function PATCH(
   req: Request,
-  { params }: { params: { memberId: string } }
+  { params }: { params: { userId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,6 +18,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Only owners can change roles
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -45,10 +45,10 @@ export async function PUT(
     }
 
     const { role } = result.data;
-    const { memberId } = params;
+    const { userId } = params;
 
     const updatedUser = await prisma.user.update({
-      where: { id: memberId },
+      where: { id: userId },
       data: { role },
       select: {
         id: true,
@@ -60,9 +60,9 @@ export async function PUT(
 
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error("Error updating member role:", error);
+    console.error("Error updating user role:", error);
     return NextResponse.json(
-      { error: "Failed to update member role" },
+      { error: "Failed to update user role" },
       { status: 500 }
     );
   }

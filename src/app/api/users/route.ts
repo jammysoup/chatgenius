@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -11,16 +11,14 @@ export async function GET(req: Request) {
     }
 
     const users = await prisma.user.findMany({
-      where: {
-        NOT: {
-          id: session.user.id, // Exclude current user
-        },
-      },
       select: {
         id: true,
         name: true,
         email: true,
-        image: true,
+        role: true,
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 

@@ -7,7 +7,13 @@ declare module "next-auth" {
       email?: string | null;
       name?: string | null;
       image?: string | null;
-      role?: string | null;
+      role?: string;
     };
+  }
+}
+
+declare module "@prisma/client" {
+  interface User {
+    role: string;
   }
 } 

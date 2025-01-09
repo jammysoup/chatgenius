@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  user
+  admin
+  owner
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -17,7 +23,7 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   status        String?   @default("offline")
-  role          String?   @default("user") // Can be "owner", "admin", or "user"
+  role          String    @default("user")
 
   // Relationships
   accounts      Account[]

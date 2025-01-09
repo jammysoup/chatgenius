@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
+
+const registerSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
+    const body = await req.json();
+    const result = registerSchema.safeParse(body);
 
-    if (!name || !email || !password) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: result.error.issues[0].message },
         { status: 400 }
       );
     }
+
+    const { name, email, password } = result.data;
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -42,10 +52,14 @@ export async function POST(req: Request) {
       },
     });
 
+    // Return success without exposing sensitive data
     return NextResponse.json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
     });
   } catch (error) {
     console.error("Registration error:", error);

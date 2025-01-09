@@ -2,6 +2,7 @@ import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { User } from "@prisma/client";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -22,7 +23,7 @@ export const authOptions: AuthOptions = {
           }
         });
 
-        if (!user) {
+        if (!user || !user.password) {
           return null;
         }
 
@@ -46,7 +47,7 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        token.role = (user as User).role;
         await prisma.user.update({
           where: { id: user.id },
           data: { status: "online" }
@@ -68,4 +69,5 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
-}; 
+  secret: process.env.NEXTAUTH_SECRET,
+};

@@ -14,13 +14,17 @@ interface Reaction {
   hasReacted: boolean
 }
 
-interface MessageReactionsProps {
-  messageId: string
-  initialReactions: Reaction[]
-}
+type MessageReactionsProps = {
+  messageId: string;
+  reactions: {
+    emoji: string;
+    count: number;
+    hasReacted: boolean;
+  }[];
+};
 
-export function MessageReactions({ messageId, initialReactions }: MessageReactionsProps) {
-  const [reactions, setReactions] = useState<Reaction[]>(
+export function MessageReactions({ messageId, reactions: initialReactions }: MessageReactionsProps) {
+  const [currentReactions, setCurrentReactions] = useState<typeof initialReactions>(
     initialReactions.filter(reaction => reaction.count > 0)
   );
 
@@ -36,7 +40,7 @@ export function MessageReactions({ messageId, initialReactions }: MessageReactio
 
       const { status } = await res.json();
       
-      setReactions((prev) => {
+      setCurrentReactions((prev) => {
         const existing = prev.find(r => r.emoji === emoji);
         if (existing) {
           // Update existing reaction
@@ -66,7 +70,7 @@ export function MessageReactions({ messageId, initialReactions }: MessageReactio
 
   return (
     <div className="flex items-center gap-1">
-      {reactions.map((reaction) => (
+      {currentReactions.map((reaction) => (
         <Button
           key={reaction.emoji}
           variant="ghost"
