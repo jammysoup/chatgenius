@@ -1,10 +1,20 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { redirect } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,171 +23,74 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import Image from "next/image";
-import { MessageReactions } from "@/components/message-reactions";
-import { Thread } from "@/components/thread";
-import { EmojiPickerButton } from "@/components/emoji-picker-button";
 import { DMSection } from "@/components/direct-messages/dm-section";
-import { MessageInput } from "@/components/message-input";
+import { MessageInput } from "@/components/messages/message-input";
+import { Message } from "@/components/messages/message";
+import { Thread } from "@/components/thread";
 import { MemberActions } from "@/components/member-actions";
+import Image from "next/image";
+import type { Message as MessageType, ChannelType, Member } from "@/types";
+import { fetchMessages, fetchChannels, fetchWorkspaceMembers, sendMessage } from "@/common/api";
+import { DEFAULT_CHANNEL, API_ENDPOINTS, ROLE_STYLES } from "@/common/constants";
+import { formatTimeAgo, getInitials, sanitizeChannelName } from "@/common/utils";
 
-type ChannelType = {
-  id: string;
-  name: string;
-  type: 'channel' | 'dm';
-};
-
-type Message = {
-  id: string;
-  content: string;
-  createdAt: string;
-  user: {
-    name: string | null;
-    email: string | null;
-  };
-  reactions: {
-    emoji: string;
-    count: number;
-    hasReacted: boolean;
-  }[];
-  threadCount: number;
-};
-
-type Member = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  image: string | null;
-  role: string | null;
-};
+interface ThreadProps {
+  parentMessage: MessageType;
+  onClose: () => void;
+}
 
 export default function Home() {
   const { data: session, status } = useSession();
-  const [activeChannel, setActiveChannel] = useState<ChannelType>({
-    id: 'general',
-    name: 'general',
-    type: 'channel'
-  });
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [activeChannel, setActiveChannel] = useState<ChannelType>(DEFAULT_CHANNEL);
+  const [messages, setMessages] = useState<MessageType[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [channels, setChannels] = useState<ChannelType[]>([]);
   const [newChannelName, setNewChannelName] = useState("");
   const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
-  const [directMessages, setDirectMessages] = useState<ChannelType[]>([]);
-  const [activeThread, setActiveThread] = useState<Message | null>(null);
+  const [activeThread, setActiveThread] = useState<MessageType | null>(null);
   const router = useRouter();
-
-  const fetchWorkspaceMembers = async () => {
-    try {
-      console.log("Fetching members...");
-      const response = await fetch('/api/workspace/members', {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      console.log("Members response status:", response.status);
-      
-      const data = await response.json();
-      console.log("Members response data:", JSON.stringify(data, null, 2));
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch members: ${data.error}`);
-      }
-      
-      if (Array.isArray(data.members)) {
-        setMembers(data.members);
-      }
-    } catch (error) {
-      console.error('Error fetching members:', error);
-    }
-  };
 
   useEffect(() => {
     if (!session?.user) return;
-    fetchWorkspaceMembers();
+    const loadMembers = async () => {
+      try {
+        const membersList = await fetchWorkspaceMembers();
+        setMembers(membersList);
+      } catch (error) {
+        console.error('Error fetching members:', error);
+      }
+    };
+    loadMembers();
   }, [session?.user?.id]);
 
   useEffect(() => {
-    fetchMessages();
+    const loadMessages = async () => {
+      try {
+        const messagesList = await fetchMessages(activeChannel.id);
+        setMessages(messagesList);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+    loadMessages();
   }, [activeChannel.id]);
 
   useEffect(() => {
     const initializeChannels = async () => {
-      const response = await fetch("/api/channels");
-      if (response.ok) {
-        const data = await response.json();
-        const channelsList = data.map((channel: any) => ({
-          id: channel.id,
-          name: channel.name,
-          type: 'channel'
-        }));
+      if (!session?.user) return;
+      try {
+        const channelsList = await fetchChannels();
         setChannels(channelsList);
-
-        // Set initial active channel if none selected
         if (!activeChannel.id && channelsList.length > 0) {
           setActiveChannel(channelsList[0]);
         }
+      } catch (error) {
+        console.error('Error fetching channels:', error);
       }
     };
-
-    if (session?.user) {
-      initializeChannels();
-    }
+    initializeChannels();
   }, [session]);
-
-  const fetchMessages = async () => {
-    const response = await fetch(`/api/messages?channelId=${activeChannel.id}`);
-    if (response.ok) {
-      const data = await response.json();
-      
-      // Fetch reactions for each message
-      const messagesWithReactions = await Promise.all(
-        data.map(async (message: Message) => {
-          const reactionsResponse = await fetch(`/api/messages/${message.id}/reactions`);
-          if (reactionsResponse.ok) {
-            const reactions = await reactionsResponse.json();
-            return { ...message, reactions };
-          }
-          return { ...message, reactions: [] };
-        })
-      );
-      
-      setMessages(messagesWithReactions);
-    }
-  };
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
-
-    const response = await fetch("/api/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        content: newMessage,
-        channelId: activeChannel.id,
-      }),
-    });
-
-    if (response.ok) {
-      setNewMessage("");
-      fetchMessages();
-    }
-  };
 
   const handleCreateChannel = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,58 +98,40 @@ export default function Home() {
 
     setIsCreatingChannel(true);
     try {
-      const response = await fetch("/api/channels", {
+      const response = await fetch(API_ENDPOINTS.CHANNELS, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newChannelName.toLowerCase().replace(/\s+/g, '-'),
+          name: sanitizeChannelName(newChannelName),
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create channel");
-      }
+      if (!response.ok) throw new Error("Failed to create channel");
 
-      // Refresh channels list
-      const channelsResponse = await fetch("/api/channels");
-      if (channelsResponse.ok) {
-        const data = await channelsResponse.json();
-        setChannels(data.map((channel: any) => ({
-          id: channel.id,
-          name: channel.name,
-          type: 'channel'
-        })));
-      }
-
+      const channelsList = await fetchChannels();
+      setChannels(channelsList);
       setNewChannelName("");
-      setIsCreatingChannel(false);
     } catch (error) {
       console.error("Error creating channel:", error);
+    } finally {
       setIsCreatingChannel(false);
     }
+  };
+
+  const handleChannelClick = (channel: ChannelType) => {
+    setActiveChannel(channel);
+  };
+
+  const handleStartThread = (message: MessageType) => {
+    setActiveThread(message);
   };
 
   const handleEmojiSelect = (emoji: string) => {
     setNewMessage(prev => prev + emoji);
   };
 
-  if (status === "loading") {
-    return <div>Loading...</div>;
-  }
-
-  if (status === "unauthenticated") {
-    redirect("/login");
-  }
-
-  const handleChannelClick = (channel: ChannelType) => {
-    setActiveChannel(channel);
-  };
-
-  const handleStartThread = (message: Message) => {
-    setActiveThread(message);
-  };
+  if (status === "loading") return <div>Loading...</div>;
+  if (status === "unauthenticated") redirect("/login");
 
   return (
     <div className="h-screen grid grid-cols-[260px_1fr_240px]">
@@ -362,74 +257,25 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto p-4">
           <div className="text-gray-800 space-y-4">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className="mb-4 p-2 hover:bg-gray-50 rounded"
-              >
-                <div className="flex items-start gap-2">
-                  <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-medium">
-                    {message.user.name?.[0] || 'U'}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{message.user?.name}</span>
-                      <span className="text-sm text-gray-500">
-                        {new Date(message.createdAt).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <p className="mt-1">{message.content}</p>
-                    
-                    <div className="mt-2 flex items-center gap-2">
-                      <MessageReactions messageId={message.id} initialReactions={message.reactions || []} />
-                      <button
-                        onClick={() => handleStartThread(message)}
-                        className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                        </svg>
-                        {message.threadCount || 0} {message.threadCount === 1 ? 'reply' : 'replies'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                {message.threadCount > 0 && (
-                  <div className="ml-8 mt-2 text-sm text-gray-500">
-                    View thread...
-                  </div>
-                )}
+              <div key={message.id} className="hover:bg-gray-50">
+                <Message
+                  message={message}
+                  onThreadClick={() => handleStartThread(message)}
+                  threadCount={message.threadCount}
+                />
               </div>
             ))}
           </div>
         </div>
 
         <div className="p-4 border-t border-gray-300 bg-white">
-          <MessageInput 
-            onSend={async (content) => {
-              try {
-                const response = await fetch("/api/messages", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    content,
-                    channelId: activeChannel.id
-                  }),
-                });
-
-                if (!response.ok) {
-                  throw new Error("Failed to send message");
-                }
-
-                fetchMessages(); // Refresh messages after sending
-                setNewMessage(''); // Clear the input after sending
-              } catch (error) {
-                console.error("Error sending message:", error);
-                throw error;
-              }
-            }} 
+          <MessageInput
+            channelId={activeChannel.id}
+            placeholder="Type a message..."
+            onSend={() => {
+              // Refresh messages after sending
+              fetchMessages(activeChannel.id).then(setMessages);
+            }}
           />
         </div>
       </div>

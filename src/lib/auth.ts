@@ -2,7 +2,14 @@ import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { User } from "@prisma/client";
+
+type AuthUser = {
+  id: string;
+  email: string;
+  name: string | null;
+  image: string | null;
+  role: string;
+};
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -20,6 +27,14 @@ export const authOptions: AuthOptions = {
         const user = await prisma.user.findUnique({
           where: {
             email: credentials.email
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            password: true,
+            role: true
           }
         });
 
@@ -33,23 +48,26 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
-        return {
+        const authUser: AuthUser = {
           id: user.id,
           email: user.email,
           name: user.name,
           image: user.image,
           role: user.role,
         };
+
+        return authUser;
       }
     })
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = (user as User).role;
+        const authUser = user as AuthUser;
+        token.id = authUser.id;
+        token.role = authUser.role || 'user';
         await prisma.user.update({
-          where: { id: user.id },
+          where: { id: authUser.id },
           data: { status: "online" }
         });
       }

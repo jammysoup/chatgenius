@@ -1,44 +1,40 @@
-export interface User {
+export interface Member {
   id: string;
   name: string | null;
-  email: string;
+  email: string | null;
   image: string | null;
   role: string | null;
-}
-
-export interface Reaction {
-  id: string;
-  emoji: string;
-  userId: string;
 }
 
 export interface Message {
   id: string;
   content: string;
   createdAt: string;
-  updatedAt: string;
-  userId: string;
   channelId: string;
-  parentId?: string | null;
-  user: User;
-  reactions: Reaction[];
-  threadCount?: number;
+  user: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  };
+  reactions: {
+    emoji: string;
+    count: number;
+    hasReacted: boolean;
+    userId: string;
+  }[];
+  threadCount: number;
 }
 
-export interface Channel {
-  id: string;
-  name: string;
-  type?: 'channel' | 'dm';
-  isPrivate?: boolean;
-  members?: User[];
-  ownerId?: string;
-}
-
-export type ChannelType = {
+export interface ChannelType {
   id: string;
   name: string;
   type: 'channel' | 'dm';
-  isPrivate?: boolean;
-  members?: User[];
-  otherUser?: User;
+  otherUser?: Member; // For DM channels
+}
+
+export interface Reaction {
+  emoji: string;
+  count: number;
+  hasReacted: boolean;
+  userId: string;
 } 

@@ -1,15 +1,18 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog } from "@/components/ui/dialog";
-import type { User } from "@/types";
 
-interface UserListProps {
+interface User {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+}
+
+interface DmUserSelectorProps {
   onDmCreated: () => void;
 }
 
-export function UserList({ onDmCreated }: UserListProps) {
+export function DmUserSelector({ onDmCreated }: DmUserSelectorProps) {
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
@@ -34,7 +37,7 @@ export function UserList({ onDmCreated }: UserListProps) {
       if (!response.ok) throw new Error("Failed to create DM");
       
       const channel = await response.json();
-      onDmCreated(); // Refresh DM list
+      onDmCreated();
       
       // Close the dialog after creating the DM
       const dialogElement = document.querySelector('[role="dialog"]');

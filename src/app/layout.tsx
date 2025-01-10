@@ -1,11 +1,13 @@
-import { Inter } from "next/font/google";
-import { getServerSession } from "next-auth/next";
-import SessionProvider from "@/components/auth/session-provider";
-import { authOptions } from "@/lib/auth";
+import type { Metadata } from "next";
 import "./globals.css";
-import { Toaster } from 'sonner';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { Providers } from "./providers";
 
-const inter = Inter({ subsets: ["latin"] });
+export const metadata: Metadata = {
+  title: "ChatGenius",
+  description: "A modern chat application",
+};
 
 export default async function RootLayout({
   children,
@@ -16,11 +18,10 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className} suppressHydrationWarning>
-        <SessionProvider session={session}>
+      <body suppressHydrationWarning>
+        <Providers session={session}>
           {children}
-          <Toaster />
-        </SessionProvider>
+        </Providers>
       </body>
     </html>
   );

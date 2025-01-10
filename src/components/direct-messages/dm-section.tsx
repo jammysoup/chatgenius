@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UserList } from "./user-list";
+import { DmUserSelector } from "./dm-user-selector";
 import type { ChannelType } from "@/types";
 
 interface DMSectionProps {
@@ -58,7 +58,7 @@ export function DMSection({ activeChannel, onChannelSelect }: DMSectionProps) {
             <DialogHeader>
               <DialogTitle>New Direct Message</DialogTitle>
             </DialogHeader>
-            <UserList onDmCreated={handleDmCreated} />
+            <DmUserSelector onDmCreated={handleDmCreated} />
           </DialogContent>
         </Dialog>
       </div>
