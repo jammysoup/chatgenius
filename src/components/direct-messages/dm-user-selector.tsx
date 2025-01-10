@@ -74,10 +74,10 @@ export function DmUserSelector({ onDmCreated }: DmUserSelectorProps) {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className="text-sm font-medium truncate text-left">
                 {user.name}
               </p>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-gray-500 truncate text-left">
                 {user.email}
               </p>
             </div>
