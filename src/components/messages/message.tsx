@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { socket } from "@/lib/socket";
+import { socketService } from "@/lib/socket";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/common/utils";
@@ -96,28 +96,22 @@ export function Message({ message, onThreadClick, threadCount }: MessageProps) {
   };
 
   useEffect(() => {
-    // Listen for message updates
-    socket.on(`message:update:${message.id}`, (updatedMessage: MessageType) => {
+    // Subscribe to message updates
+    socketService.subscribeToMessageUpdates(message.id, (updatedMessage) => {
       queryClient.setQueryData(['messages'], (oldData: MessageType[] | undefined) => {
         if (!oldData) return oldData;
         return oldData.map(msg => msg.id === updatedMessage.id ? updatedMessage : msg);
       });
     });
 
-    // Listen for thread count updates
-    socket.on(`thread:update:${message.id}`, (newThreadCount: number) => {
-      queryClient.setQueryData(['threadCounts', message.id], newThreadCount);
-    });
-
-    // Add specific reaction update listener
-    socket.on(`reaction:update:${message.id}`, (updatedReactions: MessageType['reactions']) => {
+    // Subscribe to reactions
+    socketService.subscribeToReactions(message.id, (updatedReactions) => {
       setCurrentReactions(updatedReactions.filter(reaction => reaction.count > 0));
     });
 
     return () => {
-      socket.off(`message:update:${message.id}`);
-      socket.off(`thread:update:${message.id}`);
-      socket.off(`reaction:update:${message.id}`);
+      socketService.unsubscribeFromMessageUpdates(message.id);
+      socketService.unsubscribeFromReactions(message.id);
     };
   }, [message.id, queryClient]);
 
