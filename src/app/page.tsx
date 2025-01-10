@@ -126,6 +126,10 @@ export default function Home() {
     setActiveThread(message);
   };
 
+  const handleCloseThread = () => {
+    setActiveThread(null);
+  };
+
   const handleEmojiSelect = (emoji: string) => {
     setNewMessage(prev => prev + emoji);
   };
@@ -257,23 +261,20 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto p-4">
           <div className="text-gray-800 space-y-4">
             {messages.map((message) => (
-              <div key={message.id} className="hover:bg-gray-50">
-                <Message
-                  message={message}
-                  onThreadClick={() => handleStartThread(message)}
-                  threadCount={message.threadCount}
-                />
-              </div>
+              <Message
+                key={message.id}
+                message={message}
+                onThreadClick={handleStartThread}
+              />
             ))}
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-300 bg-white">
+        <div className="p-4 border-t border-gray-300">
           <MessageInput
             channelId={activeChannel.id}
             placeholder="Type a message..."
             onSend={() => {
-              // Refresh messages after sending
               fetchMessages(activeChannel.id).then(setMessages);
             }}
           />
@@ -339,7 +340,7 @@ export default function Home() {
       {activeThread && (
         <Thread
           parentMessage={activeThread}
-          onClose={() => setActiveThread(null)}
+          onClose={handleCloseThread}
         />
       )}
     </div>

@@ -22,7 +22,6 @@ export async function GET(req: Request) {
         channelId,
         parentId: null // Only fetch top-level messages
       },
-      orderBy: { createdAt: "asc" },
       include: {
         user: {
           select: {
@@ -34,17 +33,20 @@ export async function GET(req: Request) {
         reactions: true,
         _count: {
           select: {
-            replies: true // Get count of replies
+            replies: true // Count of replies
           }
         }
       },
+      orderBy: {
+        createdAt: "asc"
+      },
     });
 
-    // Transform the messages to include threadCount
+    // Transform messages to include threadCount
     const formattedMessages = messages.map(message => ({
       ...message,
       threadCount: message._count.replies,
-      _count: undefined // Remove the _count field
+      _count: undefined
     }));
 
     return NextResponse.json(formattedMessages);

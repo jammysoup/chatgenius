@@ -11,14 +11,14 @@ import type { Message as MessageType } from "@/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserAvatarButton } from "@/components/user-avatar-button";
 import ReactMarkdown from 'react-markdown';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EMOJI_OPTIONS = ["👍", "❤️", "😄", "😮", "😢", "😡"];
 
 interface MessageProps {
   message: MessageType;
-  onThreadClick?: () => void;
+  onThreadClick?: (message: MessageType) => void;
   threadCount?: number;
 }
 
@@ -220,14 +220,25 @@ export function Message({ message, onThreadClick, threadCount }: MessageProps) {
             </Popover>
           </div>
 
-          {onThreadClick && (
-            <button
-              onClick={onThreadClick}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              {threadCount || 0} replies
-            </button>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            {message.threadCount > 0 ? (
+              <button
+                onClick={() => onThreadClick?.(message)}
+                className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              >
+                <MessageSquare className="h-4 w-4" />
+                {message.threadCount} {message.threadCount === 1 ? 'reply' : 'replies'}
+              </button>
+            ) : (
+              <button
+                onClick={() => onThreadClick?.(message)}
+                className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Reply
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
