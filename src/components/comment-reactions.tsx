@@ -1,8 +1,6 @@
 "use client"
 
-import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { socket } from "@/lib/socket";
 import { cn } from '@/common/utils'
 import { Button } from "./ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"

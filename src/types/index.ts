@@ -11,6 +11,7 @@ export interface Message {
   content: string;
   createdAt: string;
   channelId: string;
+  parentId?: string | null;
   user: {
     id: string;
     name: string | null;

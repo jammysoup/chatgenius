@@ -1,12 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
 import { cn } from '@/common/utils'
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
-import { socket } from "@/lib/socket";
-
 const EMOJI_OPTIONS = ["👍", "❤️", "😄", "😮", "😢", "😡"]
 
 interface PostReactionsProps {

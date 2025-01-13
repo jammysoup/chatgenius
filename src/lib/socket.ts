@@ -1,15 +1,27 @@
-import { Socket } from "socket.io-client";
+import { Socket as ClientSocket } from "socket.io-client";
 import io from "socket.io-client";
 import type { Message } from "@/types";
 
 class SocketService {
   private static instance: SocketService;
-  private socket: Socket | null = null;
+  private socket: ClientSocket | null = null;
 
   private constructor() {
-    this.socket = io(process.env.NEXT_PUBLIC_SITE_URL || '', {
+    const url = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    this.socket = io(url, {
       path: '/api/socket',
-      addTrailingSlash: false,
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    this.socket.on('connect', () => {
+      console.log('Connected to socket server');
+    });
+
+    this.socket.on('connect_error', (error: Error) => {
+      console.error('Socket connection error:', error);
     });
   }
 
